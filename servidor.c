@@ -19,6 +19,15 @@ void serializar_tabuleiro(const Jogo* jogo, uint8_t* buffer) {
     }
 }
 
+int confirma_que_recebeu(int sock, char mac_origem[18], Frame f){
+    uint8_t vazio[] = {0};
+    Frame ack = empacotar(TIPO_ACK, f.sequencia, vazio, 0);
+
+    // Enviar o ACK de volta para o MAC de origem
+    envia(sock, mac_origem, (unsigned char*)&ack, sizeof(Frame));
+    printf("ACK enviado para %s\n", mac_origem);
+}
+
 int main() {
     int sock = cria_raw_socket("enp1s0");  // ajuste para sua interface
     if (sock < 0) {
@@ -45,12 +54,7 @@ int main() {
             Frame f;
             if (desempacotar(&f, buffer, lidos) == 0) {
                 printf("Recebido tipo: %d de %s\n", f.tipo, mac_origem);
-
-                // Enviar ACK de volta
-                uint8_t dados_dummy[] = {0};
-                Frame ack = empacotar(TIPO_ACK, f.sequencia, dados_dummy, 0);
-                envia(sock, mac_origem, (unsigned char*)&ack, sizeof(Frame));
-                printf("ACK enviado\n");
+                if (f.tipo != 0) confirma_que_recebeu(sock, mac_origem, f);
             } else {
                 printf("Erro ao desempacotar frame.\n");
             }

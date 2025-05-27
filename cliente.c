@@ -28,11 +28,11 @@ int lida_tabuleiro (char* buffer, Frame f){
 
 int confirma_que_recebeu(int sock, char mac_origem[18], Frame f){
     uint8_t vazio[] = {0};
-        Frame ack = empacotar(TIPO_ACK, f.sequencia, vazio, 0);
+    Frame ack = empacotar(TIPO_ACK, f.sequencia, vazio, 0);
 
-        // Enviar o ACK de volta para o MAC de origem
-        envia(sock, mac_origem, (unsigned char*)&ack, sizeof(Frame));
-        printf("ACK enviado para %s\n", mac_origem);
+    // Enviar o ACK de volta para o MAC de origem
+    envia(sock, mac_origem, (unsigned char*)&ack, sizeof(Frame));
+    printf("ACK enviado para %s\n", mac_origem);
 }
 
 
@@ -52,7 +52,7 @@ int main() {
             Frame f;
             if (desempacotar(&f, buffer, lidos) == 0) {
                 printf("Recebido tipo: %d de %s\n", f.tipo, mac_origem);
-                confirma_que_recebeu(sock, mac_origem, f);
+                if (f.tipo != 0) confirma_que_recebeu(sock, mac_origem, f);
                	if (f.tipo == 16)
                     lida_tabuleiro(buffer, f);
             }
