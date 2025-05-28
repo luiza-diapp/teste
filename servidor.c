@@ -51,6 +51,14 @@ void enviar_mensagem(int socket, const char* mac_destino, const char* texto) {
     printf("Enviado TIPO_FIM_ARQUIVO (seq %d)\n", sequencia);
 }
 
+void envia_tabuleiro(int sock, Jogo* jogo){
+    uint8_t mapa_serializado[TAM * TAM];
+    serializar_tabuleiro(jogo, mapa_serializado);
+
+    Frame f = empacotar(TIPO_TABULEIRO, 0, mapa_serializado, TAM * TAM);
+    envia(sock, "00:e0:4c:28:07:e3", (unsigned char*)&f, sizeof(Frame));
+}
+
 
 int main() {
     int sock = cria_raw_socket("enp1s0");  // ajuste para sua interface
@@ -67,12 +75,7 @@ int main() {
 
     imprimir_tabuleiro(jogo);
 
-    uint8_t mapa_serializado[TAM * TAM];
-    serializar_tabuleiro(jogo, mapa_serializado);
-
-    // Empacotar e enviar o frame com o mapa inicial
-    Frame f = empacotar(TIPO_TABULEIRO, 0, mapa_serializado, TAM * TAM);
-    envia(sock, "00:e0:4c:28:07:e3", (unsigned char*)&f, sizeof(Frame));
+    envia_tabuleiro(sock, jogo);
 
     while (1) {
         int lidos = recebe(sock, buffer, mac_origem);
@@ -81,22 +84,22 @@ int main() {
             if (desempacotar(&f, buffer, lidos) == 0) {
                 printf("Recebido tipo: %d de %s\n", f.tipo, mac_origem);
                 if (f.tipo != 0) confirma_que_recebeu(sock, mac_origem, f);
-            } else {
+                if (f.tipo == 10){
+                    jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] = VISITADO;
+                    jogo->jogador_x ++;
+                    if (jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] == TESOURO){
+                        char* mensagem = "Você achou um tesouro!";
+                        enviar_mensagem(sock, mac_origem, mensagem);
+                    }
+                    imprimir_tabuleiro(jogo);
+                    envia_tabuleiro(sock, jogo);
+                }
+            }
+             else {
                 printf("Erro ao desempacotar frame.\n");
             }
         }
-        if (f.tipo == 10){
-            jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] = VISITADO;
-            jogo->jogador_x ++;
-            if (jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] == TESOURO){
-                char* mensagem = "Você achou um tesouro!";
-                enviar_mensagem(sock, mac_origem, mensagem);
-            }
-            imprimir_tabuleiro(jogo);
-
-
-
-        }
+        
     }
 
     return 0;
