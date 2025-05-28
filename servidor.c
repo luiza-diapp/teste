@@ -84,9 +84,15 @@ int main() {
             if (desempacotar(&f, buffer, lidos) == 0) {
                 printf("Recebido tipo: %d de %s\n", f.tipo, mac_origem);
                 if (f.tipo != 0) confirma_que_recebeu(sock, mac_origem, f);
-                if (f.tipo == 10){
+                if (f.tipo == 10 || f.tipo == 11 || f.tipo == 12 || f.tipo ==13 ){
                     jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] = VISITADO;
                     jogo->jogador_y ++;
+                    switch (f.tipo) {
+                        case 10: jogo->jogador_y ++; break;
+                        case 11: jogo->jogador_x ++; break;
+                        case 12: jogo->jogador_x --; break;
+                        case 13: jogo->jogador_y --; break;
+                    }
                     jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] = JOGADOR;
                     if (jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] == TESOURO){
                         char* mensagem = "Você achou um tesouro!";
