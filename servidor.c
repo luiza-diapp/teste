@@ -72,7 +72,7 @@ int main() {
 
     // Empacotar e enviar o frame com o mapa inicial
     Frame f = empacotar(TIPO_TABULEIRO, 0, mapa_serializado, TAM * TAM);
-    envia(sock, "MAC_DO_CLIENTE", (unsigned char*)&f, sizeof(Frame));
+    envia(sock, "00:e0:4c:28:07:e3", (unsigned char*)&f, sizeof(Frame));
 
     while (1) {
         int lidos = recebe(sock, buffer, mac_origem);
@@ -86,12 +86,15 @@ int main() {
             }
         }
         if (f.tipo == 10){
+            jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] = VISITADO;
             jogo->jogador_x ++;
-            Estado estado_local= jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y];
-            if (estado_local == TESOURO){
+            if (jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] == TESOURO){
                 char* mensagem = "Você achou um tesouro!";
                 enviar_mensagem(sock, mac_origem, mensagem);
             }
+            imprimir_tabuleiro(jogo);
+
+
 
         }
     }
