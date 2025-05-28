@@ -86,7 +86,7 @@ int main() {
                 if (f.tipo != 0) confirma_que_recebeu(sock, mac_origem, f);
                 if (f.tipo == 10){
                     jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] = VISITADO;
-                    jogo->jogador_x ++;
+                    jogo->jogador_y ++;
                     jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] = JOGADOR;
                     if (jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] == TESOURO){
                         char* mensagem = "Você achou um tesouro!";

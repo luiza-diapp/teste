@@ -27,23 +27,26 @@ int mostra_tabuleiro (char* buffer, Frame f){
     }
 }
 
+
 void envia_movimento(char teclaescolhida, Frame f, int sock, char mac_origem[18]){
     uint8_t tipo_movimento;
+
     switch (teclaescolhida) {
         case 'w': tipo_movimento = TIPO_CIMA; break;
         case 's': tipo_movimento = TIPO_BAIXO; break;
         case 'd': tipo_movimento = TIPO_DIREITA; break;
         case 'a': tipo_movimento = TIPO_ESQUERDA; break;
+        default:
+            printf("Tecla inválida no envio.\n");
+            return;
     }
 
-    // Monta o frame de movimento
     uint8_t vazio[] = {0};
-    Frame movimento = empacotar(tipo_movimento, f.sequencia + 1, vazio, 0); // você pode incrementar a sequência
-
-    // Envia para o servidor
+    Frame movimento = empacotar(tipo_movimento, f.sequencia + 1, vazio, 0);
     envia(sock, mac_origem, (unsigned char*)&movimento, sizeof(Frame));
     printf("Movimento enviado (%d).\n", tipo_movimento);
 }
+
 
 int confirma_que_recebeu(int sock, char mac_origem[18], Frame f){
     uint8_t vazio[] = {0};
@@ -52,6 +55,22 @@ int confirma_que_recebeu(int sock, char mac_origem[18], Frame f){
     // Enviar o ACK de volta para o MAC de origem
     envia(sock, mac_origem, (unsigned char*)&ack, sizeof(Frame));
     printf("ACK enviado para %s\n", mac_origem);
+}
+
+char ler_tecla_valida() {
+    char c;
+    while (1) {
+        printf("Digite uma tecla (w/a/s/d): ");
+        if (scanf(" %c", &c) == 1) {
+            if (c == 'w' || c == 'a' || c == 's' || c == 'd') {
+                return c;
+            } else {
+                printf("Tecla inválida! Use apenas w/a/s/d.\n");
+                // limpa qualquer caractere extra, inclusive '\n'
+                while (getchar() != '\n');
+            }
+        }
+    }
 }
 
 
@@ -76,8 +95,7 @@ int main() {
                 if (f.tipo == 16 || f.tipo == 10 || f.tipo == 11 || f.tipo == 13 || f.tipo == 14){
                     mostra_tabuleiro(buffer, f);
                     printf("Para andar no mapa pressione alguma das teclas: ⬆, ⬇, ⮕, ⬅ \n");
-                    char teclaescolhida;
-                    scanf("%c", &teclaescolhida);
+                    char teclaescolhida = ler_tecla_valida();
                     envia_movimento(teclaescolhida, f, sock, mac_origem);
                 }
             }
