@@ -74,35 +74,6 @@ char ler_tecla_valida() {
 }
 
 
-void receber_mensagem_texto(int socket) {
-    unsigned char buffer[2048];
-    char origem_mac[18];
-    Frame f;
-
-    char mensagem[1024];  // Suporta até 1024 caracteres de texto
-    int pos = 0;
-
-    while (1) {
-        int lidos = recebe(socket, buffer, origem_mac);
-        if (lidos <= 0) continue;
-        if (!protocolo_e_valido((char*)buffer, lidos)) continue;
-        if (desempacotar(&f, buffer, lidos) != 0) continue;
-
-        if (f.tipo == TIPO_TEXTO) {
-            if (pos + f.tamanho < sizeof(mensagem)) {
-                memcpy(&mensagem[pos], f.dados, f.tamanho);
-                pos += f.tamanho;
-            } else {
-                printf("Erro: mensagem muito grande\n");
-                break;
-            }
-        } else if (f.tipo == TIPO_FIM_ARQUIVO) {
-            mensagem[pos] = '\0'; // Finaliza a string
-            printf("\n📨 Mensagem recebida:\n%s\n", mensagem);
-            break;
-        }
-    }
-}
 
 
 
@@ -129,9 +100,39 @@ int main() {
                     char teclaescolhida = ler_tecla_valida();
                     envia_movimento(teclaescolhida, f, sock, mac_origem);
                 }
-                else if (f.tipo == 6){
-                    receber_mensagem_texto(sock);
+                else if (f.tipo == TIPO_TEXTO) {
+                    // Inicia montagem da mensagem
+                    char mensagem[1024] = {0};
+                    int pos = 0;
+
+                    // Copia o primeiro pedaço que já foi recebido
+                    if (f.tamanho + pos < sizeof(mensagem)) {
+                        memcpy(&mensagem[pos], f.dados, f.tamanho);
+                        pos += f.tamanho;
+                    }
+
+                    // Agora continua lendo até receber TIPO_FIM_ARQUIVO
+                    while (1) {
+                        int lidos2 = recebe(sock, buffer, mac_origem);
+                        Frame f2;
+
+                        if ((lidos2 > 0) && protocolo_e_valido((char*)buffer, lidos2)) {
+                            if (desempacotar(&f2, buffer, lidos2) == 0) {
+                                if (f2.tipo == TIPO_TEXTO) {
+                                    if (pos + f2.tamanho < sizeof(mensagem)) {
+                                        memcpy(&mensagem[pos], f2.dados, f2.tamanho);
+                                        pos += f2.tamanho;
+                                    }
+                                } else if (f2.tipo == TIPO_FIM_ARQUIVO) {
+                                    mensagem[pos] = '\0';
+                                    printf("\n📨 Mensagem recebida:\n%s\n", mensagem);
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
+
             }
         else
             printf("Erro ao desempacotar frame.\n");
