@@ -28,6 +28,30 @@ int confirma_que_recebeu(int sock, char mac_origem[18], Frame f){
     printf("ACK enviado para %s\n", mac_origem);
 }
 
+#include <string.h>
+#include "protocolo.h"
+
+void enviar_mensagem(int socket, const char* mac_destino, const char* texto) {
+    uint8_t sequencia = 0;
+    size_t total = strlen(texto);
+    size_t enviados = 0;
+
+    while (enviados < total) {
+        uint8_t tamanho = (total - enviados > TAM_MAX_DADOS) ? TAM_MAX_DADOS : (total - enviados);
+        Frame f = empacotar(TIPO_TEXTO, sequencia, (uint8_t*)&texto[enviados], tamanho);
+        envia(socket, mac_destino, (unsigned char*)&f, sizeof(Frame));
+        printf("Enviado: \"%.*s\" (seq %d)\n", tamanho, &texto[enviados], sequencia);
+        enviados += tamanho;
+        sequencia++;
+    }
+
+    // Envia um frame especial indicando fim da mensagem
+    Frame fim = empacotar(TIPO_FIM_ARQUIVO, sequencia, NULL, 0);
+    envia(socket, mac_destino, (unsigned char*)&fim, sizeof(Frame));
+    printf("Enviado TIPO_FIM_ARQUIVO (seq %d)\n", sequencia);
+}
+
+
 int main() {
     int sock = cria_raw_socket("enp1s0");  // ajuste para sua interface
     if (sock < 0) {
@@ -41,6 +65,8 @@ int main() {
     Jogo* jogo = criar_jogo();
     inicializar_tabuleiro(jogo);
 
+    imprimir_tabuleiro(jogo);
+
     uint8_t mapa_serializado[TAM * TAM];
     serializar_tabuleiro(jogo, mapa_serializado);
 
@@ -50,14 +76,23 @@ int main() {
 
     while (1) {
         int lidos = recebe(sock, buffer, mac_origem);
+        Frame f;
         if ((lidos > 0) && (protocolo_e_valido((char*)buffer, lidos))) {
-            Frame f;
             if (desempacotar(&f, buffer, lidos) == 0) {
                 printf("Recebido tipo: %d de %s\n", f.tipo, mac_origem);
                 if (f.tipo != 0) confirma_que_recebeu(sock, mac_origem, f);
             } else {
                 printf("Erro ao desempacotar frame.\n");
             }
+        }
+        if (f.tipo == 10){
+            jogo->jogador_x ++;
+            Estado estado_local= jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y];
+            if (estado_local == TESOURO){
+                char* mensagem = "Você achou um tesouro!";
+                enviar_mensagem(sock, mac_origem, mensagem);
+            }
+
         }
     }
 

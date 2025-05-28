@@ -27,6 +27,24 @@ int mostra_tabuleiro (char* buffer, Frame f){
     }
 }
 
+void envia_movimento(char teclaescolhida, Frame f, int sock, char mac_origem[18]){
+    uint8_t tipo_movimento;
+    switch (teclaescolhida) {
+        case 'w': tipo_movimento = TIPO_CIMA; break;
+        case 's': tipo_movimento = TIPO_BAIXO; break;
+        case 'd': tipo_movimento = TIPO_DIREITA; break;
+        case 'a': tipo_movimento = TIPO_ESQUERDA; break;
+    }
+
+    // Monta o frame de movimento
+    uint8_t vazio[] = {0};
+    Frame movimento = empacotar(tipo_movimento, f.sequencia + 1, vazio, 0); // você pode incrementar a sequência
+
+    // Envia para o servidor
+    envia(sock, mac_origem, (unsigned char*)&movimento, sizeof(Frame));
+    printf("Movimento enviado (%d).\n", tipo_movimento);
+}
+
 int confirma_que_recebeu(int sock, char mac_origem[18], Frame f){
     uint8_t vazio[] = {0};
     Frame ack = empacotar(TIPO_ACK, f.sequencia, vazio, 0);
@@ -62,26 +80,12 @@ int main() {
 
         if (f.tipo == 16){
             mostra_tabuleiro(buffer, f);
+
             printf("Para andar no mapa pressione alguma das teclas: ⬆, ⬇, ⮕, ⬅ \n");
             char teclaescolhida;
             scanf("%c", &teclaescolhida);
-            uint8_t tipo_movimento;
 
-            // Mapeia a tecla para o tipo do protocolo
-            switch (teclaescolhida) {
-                case 'w': tipo_movimento = TIPO_CIMA; break;
-                case 's': tipo_movimento = TIPO_BAIXO; break;
-                case 'd': tipo_movimento = TIPO_DIREITA; break;
-                case 'a': tipo_movimento = TIPO_ESQUERDA; break;
-            }
-
-            // Monta o frame de movimento
-            uint8_t vazio[] = {0};
-            Frame movimento = empacotar(tipo_movimento, f.sequencia + 1, vazio, 0); // você pode incrementar a sequência
-
-            // Envia para o servidor
-            envia(sock, mac_origem, (unsigned char*)&movimento, sizeof(Frame));
-            printf("Movimento enviado (%d).\n", tipo_movimento);
+            envia_movimento(teclaescolhida, f, sock, mac_origem);
         }
 
     }
