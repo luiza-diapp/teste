@@ -59,9 +59,6 @@ void receber_mensagem_texto(int socket) {
     }
 }
 
-#include <string.h>
-#include "protocolo.h"
-
 void enviar_mensagem_texto(int socket, const char* mac_destino, const char* texto) {
     uint8_t sequencia = 0;
     size_t total = strlen(texto);
