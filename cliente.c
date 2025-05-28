@@ -73,19 +73,16 @@ int main() {
             if (desempacotar(&f, buffer, lidos) == 0) {
                 printf("Recebido tipo: %d de %s\n", f.tipo, mac_origem);
                 if (f.tipo != 0) confirma_que_recebeu(sock, mac_origem, f);
+                if (f.tipo == 16 || f.tipo == 10 || f.tipo == 11 || f.tipo == 13 || f.tipo == 14){
+                    mostra_tabuleiro(buffer, f);
+                    printf("Para andar no mapa pressione alguma das teclas: ⬆, ⬇, ⮕, ⬅ \n");
+                    char teclaescolhida;
+                    scanf("%c", &teclaescolhida);
+                    envia_movimento(teclaescolhida, f, sock, mac_origem);
+                }
             }
         else
             printf("Erro ao desempacotar frame.\n");
-        }
-
-        if (f.tipo == 16){
-            mostra_tabuleiro(buffer, f);
-
-            printf("Para andar no mapa pressione alguma das teclas: ⬆, ⬇, ⮕, ⬅ \n");
-            char teclaescolhida;
-            scanf("%c", &teclaescolhida);
-
-            envia_movimento(teclaescolhida, f, sock, mac_origem);
         }
 
     }
