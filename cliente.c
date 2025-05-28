@@ -74,6 +74,37 @@ char ler_tecla_valida() {
 }
 
 
+void receber_mensagem_texto(int socket) {
+    unsigned char buffer[2048];
+    char origem_mac[18];
+    Frame f;
+
+    char mensagem[1024];  // Suporta até 1024 caracteres de texto
+    int pos = 0;
+
+    while (1) {
+        int lidos = recebe(socket, buffer, origem_mac);
+        if (lidos <= 0) continue;
+        if (!protocolo_e_valido((char*)buffer, lidos)) continue;
+        if (desempacotar(&f, buffer, lidos) != 0) continue;
+
+        if (f.tipo == TIPO_TEXTO) {
+            if (pos + f.tamanho < sizeof(mensagem)) {
+                memcpy(&mensagem[pos], f.dados, f.tamanho);
+                pos += f.tamanho;
+            } else {
+                printf("Erro: mensagem muito grande\n");
+                break;
+            }
+        } else if (f.tipo == TIPO_FIM_ARQUIVO) {
+            mensagem[pos] = '\0'; // Finaliza a string
+            printf("\n📨 Mensagem recebida:\n%s\n", mensagem);
+            break;
+        }
+    }
+}
+
+
 
 int main() {
     int sock = cria_raw_socket("enx00e04c2807e3");  // ajuste para sua interface
@@ -97,6 +128,9 @@ int main() {
                     printf("Para andar no mapa pressione alguma das teclas: ⬆, ⬇, ⮕, ⬅ \n");
                     char teclaescolhida = ler_tecla_valida();
                     envia_movimento(teclaescolhida, f, sock, mac_origem);
+                }
+                else if (f.tipo == 6){
+                    receber_mensagem_texto(sock);
                 }
             }
         else

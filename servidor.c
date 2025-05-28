@@ -28,10 +28,41 @@ int confirma_que_recebeu(int sock, char mac_origem[18], Frame f){
     printf("ACK enviado para %s\n", mac_origem);
 }
 
+
+void receber_mensagem_texto(int socket) {
+    unsigned char buffer[2048];
+    char origem_mac[18];
+    Frame f;
+
+    char mensagem[1024];  // Suporta até 1024 caracteres de texto
+    int pos = 0;
+
+    while (1) {
+        int lidos = recebe(socket, buffer, origem_mac);
+        if (lidos <= 0) continue;
+        if (!protocolo_e_valido((char*)buffer, lidos)) continue;
+        if (desempacotar(&f, buffer, lidos) != 0) continue;
+
+        if (f.tipo == TIPO_TEXTO) {
+            if (pos + f.tamanho < sizeof(mensagem)) {
+                memcpy(&mensagem[pos], f.dados, f.tamanho);
+                pos += f.tamanho;
+            } else {
+                printf("Erro: mensagem muito grande\n");
+                break;
+            }
+        } else if (f.tipo == TIPO_FIM_ARQUIVO) {
+            mensagem[pos] = '\0'; // Finaliza a string
+            printf("\n📨 Mensagem recebida:\n%s\n", mensagem);
+            break;
+        }
+    }
+}
+
 #include <string.h>
 #include "protocolo.h"
 
-void enviar_mensagem(int socket, const char* mac_destino, const char* texto) {
+void enviar_mensagem_texto(int socket, const char* mac_destino, const char* texto) {
     uint8_t sequencia = 0;
     size_t total = strlen(texto);
     size_t enviados = 0;
@@ -94,7 +125,7 @@ int main() {
                     }
                     if (jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] == TESOURO){
                         char* mensagem = "Você achou um tesouro!";
-                        enviar_mensagem(sock, mac_origem, mensagem);
+                        enviar_mensagem_texto(sock, mac_origem, mensagem);
                     }
                     else {
                         jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] = JOGADOR;
