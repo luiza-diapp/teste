@@ -72,7 +72,7 @@ int main() {
 
     Jogo* jogo = criar_jogo();
     inicializar_tabuleiro(jogo);
-
+    jogo->tabuleiro[0][0]= JOGADOR;
     imprimir_tabuleiro(jogo);
 
     envia_tabuleiro(sock, jogo);
@@ -87,6 +87,7 @@ int main() {
                 if (f.tipo == 10){
                     jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] = VISITADO;
                     jogo->jogador_x ++;
+                    jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] = JOGADOR;
                     if (jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] == TESOURO){
                         char* mensagem = "Você achou um tesouro!";
                         enviar_mensagem(sock, mac_origem, mensagem);
