@@ -27,44 +27,15 @@ int mostra_tabuleiro (char* buffer, Frame f){
     }
 }
 
-    int confirma_que_recebeu(int sock, char mac_origem[18], Frame f){
-        uint8_t vazio[] = {0};
-        Frame ack = empacotar(TIPO_ACK, f.sequencia, vazio, 0);
+int confirma_que_recebeu(int sock, char mac_origem[18], Frame f){
+    uint8_t vazio[] = {0};
+    Frame ack = empacotar(TIPO_ACK, f.sequencia, vazio, 0);
 
-        // Enviar o ACK de volta para o MAC de origem
-        envia(sock, mac_origem, (unsigned char*)&ack, sizeof(Frame));
-        printf("ACK enviado para %s\n", mac_origem);
-    }
-
-
-
-char le_seta (){
-    char tecla[3];
-    while (1){ 
-        read(STDIN_FILENO, tecla, 3); // lê até 3 bytes
-        if (tecla[0] == 27 && tecla[1] == 91) {  // detecta sequência de escape ANSI
-            switch (tecla[2]) {
-                case 'A':
-                    printf("Seta para CIMA\n");
-                    return 'c';
-                case 'B':
-                    printf("Seta para BAIXO\n");
-                    return 'b';
-                case 'C':
-                    printf("Seta para DIREITA\n");
-                    return 'd';
-                case 'D':
-                    printf("Seta para ESQUERDA\n");
-                    return 'e';
-                default:
-                    // Tecla desconhecida, ignora
-                    break;
-            }
-        }
-        // Ignora qualquer outra tecla
-        printf("Tecla não é uma seta. Pressione uma das setas.\n");
-    }
+    // Enviar o ACK de volta para o MAC de origem
+    envia(sock, mac_origem, (unsigned char*)&ack, sizeof(Frame));
+    printf("ACK enviado para %s\n", mac_origem);
 }
+
 
 
 int main() {
@@ -92,15 +63,16 @@ int main() {
         if (f.tipo == 16){
             mostra_tabuleiro(buffer, f);
             printf("Para andar no mapa pressione alguma das teclas: ⬆, ⬇, ⮕, ⬅ \n");
-            char teclaescolhida = le_seta();
+            char teclaescolhida;
+            scanf("%c", &teclaescolhida);
             uint8_t tipo_movimento;
 
             // Mapeia a tecla para o tipo do protocolo
             switch (teclaescolhida) {
-                case 'c': tipo_movimento = TIPO_CIMA; break;
-                case 'b': tipo_movimento = TIPO_BAIXO; break;
+                case 'w': tipo_movimento = TIPO_CIMA; break;
+                case 's': tipo_movimento = TIPO_BAIXO; break;
                 case 'd': tipo_movimento = TIPO_DIREITA; break;
-                case 'e': tipo_movimento = TIPO_ESQUERDA; break;
+                case 'a': tipo_movimento = TIPO_ESQUERDA; break;
             }
 
             // Monta o frame de movimento
