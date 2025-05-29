@@ -2,11 +2,7 @@
 #include <string.h>
 #include "protocolo.h"
 #include "tabuleiroservidor.h"
-
-extern int cria_raw_socket(const char* interface);
-extern int recebe(int socket, unsigned char* dados, char* origem);
-extern int envia(int socket, const char* destino, const unsigned char* dados, int tamanho);
-extern int protocolo_e_valido(char* buffer, int tamanho_buffer);
+#include "funcoesfornecidass.h"
 
 // Retorna vetor de 64 bytes representando o tabuleiro
 void serializar_tabuleiro(const Jogo* jogo, uint8_t* buffer) {
@@ -24,10 +20,18 @@ int confirma_que_recebeu(int sock, char mac_origem[18], Frame f){
     Frame ack = empacotar(TIPO_ACK, f.sequencia, vazio, 0);
 
     // Enviar o ACK de volta para o MAC de origem
-    envia(sock, mac_origem, (unsigned char*)&ack, sizeof(Frame));
+    envia_servidor(sock, mac_origem, (unsigned char*)&ack, sizeof(Frame));
     printf("ACK enviado para %s\n", mac_origem);
 }
 
+int envia_nack(int sock, char mac_origem[18], Frame f){
+    uint8_t vazio[] = {0};
+    Frame ack = empacotar(TIPO_NACK, f.sequencia, vazio, 0);
+
+    // Enviar o ACK de volta para o MAC de origem
+    envia_servidor(sock, mac_origem, (unsigned char*)&ack, sizeof(Frame));
+    printf("ACK enviado para %s\n", mac_origem);
+}
 
 void receber_mensagem_texto(int socket) {
     unsigned char buffer[2048];
@@ -67,7 +71,7 @@ void enviar_mensagem_texto(int socket, const char* mac_destino, const char* text
     while (enviados < total) {
         uint8_t tamanho = (total - enviados > TAM_MAX_DADOS) ? TAM_MAX_DADOS : (total - enviados);
         Frame f = empacotar(TIPO_TEXTO, sequencia, (uint8_t*)&texto[enviados], tamanho);
-        envia(socket, mac_destino, (unsigned char*)&f, sizeof(Frame));
+        envia_servidor(socket, mac_destino, (unsigned char*)&f, sizeof(Frame));
         printf("Enviado: \"%.*s\" (seq %d)\n", tamanho, &texto[enviados], sequencia);
         enviados += tamanho;
         sequencia++;
@@ -75,7 +79,7 @@ void enviar_mensagem_texto(int socket, const char* mac_destino, const char* text
 
     // Envia um frame especial indicando fim da mensagem
     Frame fim = empacotar(TIPO_FIM_ARQUIVO, sequencia, NULL, 0);
-    envia(socket, mac_destino, (unsigned char*)&fim, sizeof(Frame));
+    envia_servidor(socket, mac_destino, (unsigned char*)&fim, sizeof(Frame));
     printf("Enviado TIPO_FIM_ARQUIVO (seq %d)\n", sequencia);
 }
 
@@ -84,7 +88,7 @@ void envia_tabuleiro(int sock, Jogo* jogo){
     serializar_tabuleiro(jogo, mapa_serializado);
 
     Frame f = empacotar(TIPO_TABULEIRO, 0, mapa_serializado, TAM * TAM);
-    envia(sock, "00:e0:4c:28:07:e3", (unsigned char*)&f, sizeof(Frame));
+    envia_servidor(sock, "00:e0:4c:28:07:e3", (unsigned char*)&f, sizeof(Frame));
 }
 
 
@@ -120,7 +124,9 @@ int main() {
                         case 12: jogo->jogador_x --; break;
                         case 13: jogo->jogador_y --; break;
                     }
-                    if (jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] == TESOURO){
+                    if (jogo->jogador_y < 0 ||  jogo->jogador_y >7 || jogo->jogador_x <0 || jogo->jogador_x >7)
+                        envia_nack(sock, mac_origem, f);
+                    else if (jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] == TESOURO){
                         char* mensagem = "Você achou um tesouro!";
                         enviar_mensagem_texto(sock, mac_origem, mensagem);
                     }

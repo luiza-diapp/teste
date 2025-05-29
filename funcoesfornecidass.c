@@ -89,7 +89,7 @@ int recebe_mensagem(int soquete, int timeoutMillis, char* buffer, int tamanho_bu
 /*O MAC de destino (endereço MAC) é o identificador físico único da placa de rede (NIC) do 
 dispositivo que deve receber um frame na rede local (ex: Wi-Fi, Ethernet).*/
 
-int envia(int socket, const char* destino_mac_str, const unsigned char* dados, int tamanho) {
+int envia_servidor(int socket, const char* destino_mac_str, const unsigned char* dados, int tamanho) {
     struct sockaddr_ll sa; // estrutura criada para enviar pacotes no nível 2 
     struct ifreq ifr; // usada para obter o índice da interface de rede 
     unsigned char destino_mac[6]; // array que armazenará o MAC de destino em bytes 
@@ -122,6 +122,34 @@ int envia(int socket, const char* destino_mac_str, const unsigned char* dados, i
 
     return sendto(socket, dados, tamanho, 0, (struct sockaddr*)&sa, sizeof(sa));
 }
+
+
+int envia_cliente(int socket, const char* destino_mac_str, const unsigned char* dados, int tamanho) {
+    struct sockaddr_ll sa;
+    struct ifreq ifr;
+    unsigned char destino_mac[6];
+
+    // converter string MAC para bytes
+    sscanf(destino_mac_str, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
+           &destino_mac[0], &destino_mac[1], &destino_mac[2],
+           &destino_mac[3], &destino_mac[4], &destino_mac[5]);
+
+    // nome da interface fixa (ou passe como argumento depois)
+    strncpy(ifr.ifr_name, "enx00e04c2807e3", IFNAMSIZ - 1); // <-- AJUSTE para sua interface
+
+    if (ioctl(socket, SIOCGIFINDEX, &ifr) < 0) {
+        perror("ioctl");
+        return -1;
+    }
+
+    memset(&sa, 0, sizeof(sa));
+    sa.sll_ifindex = ifr.ifr_ifindex;
+    sa.sll_halen = ETH_ALEN;
+    memcpy(sa.sll_addr, destino_mac, 6);
+
+    return sendto(socket, dados, tamanho, 0, (struct sockaddr*)&sa, sizeof(sa));
+}
+
 
 int recebe(int socket, unsigned char* dados, char* origem_mac_str) {
     struct sockaddr_ll sa; //criada para armazenar quem enviou o pacote
