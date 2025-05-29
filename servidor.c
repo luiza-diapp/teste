@@ -124,11 +124,18 @@ int main() {
                         case 12: jogo->jogador_x --; break;
                         case 13: jogo->jogador_y --; break;
                     }
-                    if (jogo->jogador_y < 0 ||  jogo->jogador_y >7 || jogo->jogador_x <0 || jogo->jogador_x >7)
+                    if (jogo->jogador_y < 0 ||  jogo->jogador_y >7 || jogo->jogador_x <0 || jogo->jogador_x >7){
+                        if (jogo->jogador_y < 0) jogo->jogador_y = 0;
+                        else if (jogo->jogador_y >7 ) jogo->jogador_y = 7;
+                        else if (jogo->jogador_x <0) jogo->jogador_x = 0;
+                        else if (jogo->jogador_x > 7) jogo->jogador_x = 7;
                         envia_nack(sock, mac_origem, f);
+                    }
                     else if (jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] == TESOURO){
                         char* mensagem = "Você achou um tesouro!";
                         enviar_mensagem_texto(sock, mac_origem, mensagem);
+                        jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] = JOGADOR;
+                        envia_tabuleiro(sock, jogo);
                     }
                     else {
                         jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] = JOGADOR;

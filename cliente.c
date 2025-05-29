@@ -132,10 +132,6 @@ int main() {
                             }
                         }
                     }
-                    mostra_tabuleiro(buffer, f);
-                    printf("Para andar no mapa pressione alguma das teclas: ⬆, ⬇, ⮕, ⬅ \n");
-                    char teclaescolhida = ler_tecla_valida();
-                    envia_movimento(teclaescolhida, f, sock, mac_origem);
                 }
 
             }
